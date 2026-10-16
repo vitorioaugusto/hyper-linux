@@ -19,5 +19,5 @@
     <caption>Headset controls with an English interface</caption>
     <image>https://raw.githubusercontent.com/vitorioaugusto/hyper-linux/main/docs/screenshot.png</image>
   </screenshot></screenshots>
-  <releases><release version="0.2.1" date="2026-10-16"><description><p>English interface and AppImage and Debian packages.</p></description></release></releases>
+  <releases><release version="0.2.2" date="2026-10-16"><description><p>Fix missing Wayland client integrations and verify visible window startup.</p></description></release></releases>
 </component>

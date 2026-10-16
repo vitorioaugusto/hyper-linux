@@ -1,14 +1,14 @@
 > **This entire project was vibe-coded with AI assistance.** Experimental community software, released under the MIT License.
 
-- English application interface, diagnostics and repository screenshots.
-- x86_64 AppImage with Qt, Python and libusb included.
-- amd64 Debian/Ubuntu package with desktop launcher, dependencies and USB permission rules.
-- Automated package builds, startup checks and SHA256 checksums.
-- Complete third-party license texts alongside distribution copyright notices.
+- Fix AppImages running without a visible window on KDE/Wayland, including when launched through Gear Lever.
+- Bundle Qt Wayland shell, graphics and decoration integrations and their dependencies.
+- Require the window to become exposed during startup tests.
+- Add a headless Weston test and a regression check that deliberately removes shell integrations.
+- Keep the English interface, MIT license and original artwork.
 
-**AppImage:** download, run `chmod +x Hyper_Linux-0.2.1-x86_64.AppImage`, then open it. If FUSE is unavailable, pass `--appimage-extract-and-run`.
+**AppImage:** download, run `chmod +x Hyper_Linux-0.2.2-x86_64.AppImage`, then open it. If FUSE is unavailable, pass `--appimage-extract-and-run`.
 
-**Debian/Ubuntu:** `sudo apt install ./hyper-linux_0.2.1_amd64.deb`. Reconnect the dongle after installation.
+**Debian/Ubuntu:** `sudo apt install ./hyper-linux_0.2.2_amd64.deb`. Reconnect the dongle after installation.
 
 A running PipeWire desktop session with PulseAudio compatibility and the host `pipewire` / `pactl` tools is required. Built on Ubuntu 22.04 (glibc 2.35). Packages are x86_64 only. AppImage users may need to install the supplied udev rule; see the README.
 

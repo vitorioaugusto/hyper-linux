@@ -6,7 +6,7 @@
 
 static QString root;
 #ifndef HYPER_LINUX_VERSION
-#define HYPER_LINUX_VERSION "0.2.1"
+#define HYPER_LINUX_VERSION "0.2.2"
 #endif
 
 static QPair<QString, QStringList> backendCommand(QString argument) {
@@ -536,6 +536,19 @@ int main(int argc, char **argv) {
         auto output = args[index + 1];
         QTimer::singleShot(150, &window, [&window, output] { QCoreApplication::exit(window.grab().save(output) ? 0 : 1); });
     }
-    if (args.contains("--smoke-test")) QTimer::singleShot(700, &app, &QCoreApplication::quit);
+    if (args.contains("--smoke-test")) {
+        auto *probe = new QTimer(&app);
+        QElapsedTimer elapsed; elapsed.start();
+        QObject::connect(probe, &QTimer::timeout, &app, [&app, &window, elapsed] {
+            if (window.isVisible() && window.windowHandle() && window.windowHandle()->isExposed()) {
+                QTextStream(stdout) << "Window exposed on " << QGuiApplication::platformName() << '\n';
+                app.exit(0);
+            } else if (elapsed.elapsed() >= 5000) {
+                QTextStream(stderr) << "Window did not become exposed on " << QGuiApplication::platformName() << '\n';
+                app.exit(1);
+            }
+        });
+        probe->start(100);
+    }
     return app.exec();
 }

@@ -13,6 +13,15 @@ mkdir -p "$hyper_stage/usr/share/hyper-linux" "$hyper_stage/usr/share/metainfo" 
 install -m644 LICENSE VERSION README.md README.pt-BR.md udev/70-hyper-linux.rules "$hyper_stage/usr/share/hyper-linux/"
 install -m644 packaging/io.github.vitorioaugusto.HyperLinux.metainfo.xml "$hyper_stage/usr/share/metainfo/"
 python3 packaging/collect-licenses.py "$hyper_stage/usr/share/licenses/hyper-linux"
+# Platform plugins alone cannot create a Wayland window. Copy the client
+# integrations before linuxdeploy scans the AppDir, so their ELF dependencies
+# (including Qt6WlShellIntegration) are deployed as well.
+hyper_qt_plugins="$(/usr/bin/qmake6 -query QT_INSTALL_PLUGINS)"
+for hyper_category in wayland-shell-integration wayland-graphics-integration-client wayland-decoration-client; do
+    test -d "$hyper_qt_plugins/$hyper_category"
+    mkdir -p "$hyper_stage/usr/plugins/$hyper_category"
+    cp -a "$hyper_qt_plugins/$hyper_category/"*.so "$hyper_stage/usr/plugins/$hyper_category/"
+done
 hyper_libusb="$(ldconfig -p | awk '/libusb-1.0.so.0 .*x86-64/ {print $NF; exit}')"
 env APPIMAGE_EXTRACT_AND_RUN=1 QMAKE=/usr/bin/qmake6 \
     EXTRA_PLATFORM_PLUGINS='libqoffscreen.so;libqwayland-egl.so;libqwayland-generic.so' \

@@ -31,14 +31,14 @@ Baixe o **AppImage** ou o **.deb** em [GitHub Releases](https://github.com/vitor
 Inclui Qt, Python e libusb. O sistema precisa de uma sessão **PipeWire com compatibilidade PulseAudio**, além dos comandos `pipewire` e `pactl`. No Arch / CachyOS, eles são fornecidos por `pipewire`, `pipewire-pulse` e `libpulse`.
 
 ```bash
-chmod +x Hyper_Linux-0.2.1-x86_64.AppImage
-./Hyper_Linux-0.2.1-x86_64.AppImage
+chmod +x Hyper_Linux-0.2.2-x86_64.AppImage
+./Hyper_Linux-0.2.2-x86_64.AppImage
 ```
 
 Se a distribuição não conseguir montar AppImages com FUSE:
 
 ```bash
-./Hyper_Linux-0.2.1-x86_64.AppImage --appimage-extract-and-run
+./Hyper_Linux-0.2.2-x86_64.AppImage --appimage-extract-and-run
 ```
 
 O AppImage não instala regras USB nem altera os serviços de áudio. Veja **Permissão USB** abaixo, se necessário.
@@ -46,7 +46,7 @@ O AppImage não instala regras USB nem altera os serviços de áudio. Veja **Per
 ### Debian / Ubuntu
 
 ```bash
-sudo apt install ./hyper-linux_0.2.1_amd64.deb
+sudo apt install ./hyper-linux_0.2.2_amd64.deb
 hyper-linux
 ```
 
