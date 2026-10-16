@@ -22,11 +22,11 @@ jobs:
       - name: Install build and runtime dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends g++ pkg-config dpkg-dev fakeroot patchelf qt6-base-dev qt6-base-dev-tools qt6-wayland python3 python3-pip libpython3.10 libusb-1.0-0 pulseaudio-utils pipewire-bin libfuse2 libgl1 libgl-dev libegl1 libxkbcommon0 libxcb-cursor0 desktop-file-utils
+          sudo apt-get install -y --no-install-recommends g++ pkg-config patchelf qt6-base-dev qt6-base-dev-tools qt6-wayland python3 python3-pip libpython3.10 libusb-1.0-0 pulseaudio-utils pipewire-bin libfuse2 libgl1 libgl-dev libegl1 libxkbcommon0 libxcb-cursor0 desktop-file-utils
           python3 -m pip install pyinstaller==6.22.3
-      - name: Test, build and verify AppImage and Debian packages
+      - name: Test, build and verify AppImage
         run: bash packaging/build-packages.sh
-      - name: Verify clean runtime and Debian dependency installation
+      - name: Verify clean AppImage runtime and Wayland
         env:
           HYPER_CONTAINER_ENGINE: docker
         run: bash packaging/test-clean-containers.sh
@@ -40,7 +40,6 @@ jobs:
           name: hyper-linux-x86_64-packages
           path: |
             dist/*.AppImage
-            dist/*.deb
             dist/SHA256SUMS
           if-no-files-found: error
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -68,4 +67,4 @@ jobs:
         run: |
           hyper_version="$(cat VERSION)"
           (cd dist && sha256sum --check SHA256SUMS)
-          gh release create "v$hyper_version" dist/*.AppImage dist/*.deb dist/SHA256SUMS --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Hyper Linux $hyper_version" --notes-file RELEASE_NOTES.md
+          gh release create "v$hyper_version" dist/*.AppImage dist/SHA256SUMS --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Hyper Linux $hyper_version" --notes-file RELEASE_NOTES.md

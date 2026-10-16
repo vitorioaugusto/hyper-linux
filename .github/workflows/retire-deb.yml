@@ -1,0 +1,80 @@
+name: Retire Debian release assets
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/retire-deb.yml']
+permissions:
+  contents: read
+jobs:
+  retire:
+    if: github.repository == 'vitorioaugusto/hyper-linux'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Remove Debian assets and update release checksums and notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYTHON'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import sys
+          import tempfile
+          import urllib.request
+          
+          repository = 'vitorioaugusto/hyper-linux'
+          dry_run = '--dry-run' in sys.argv
+          
+          def api(method, path, payload=None):
+              headers = {'Accept': 'application/vnd.github+json', 'User-Agent': 'Hyper-Linux-release-maintenance'}
+              token = os.environ.get('GH_TOKEN')
+              if token:
+                  headers['Authorization'] = 'Bearer ' + token
+              data = None if payload is None else json.dumps(payload).encode()
+              if data is not None:
+                  headers['Content-Type'] = 'application/json'
+              request = urllib.request.Request('https://api.github.com/' + path, data=data, headers=headers, method=method)
+              with urllib.request.urlopen(request) as response:
+                  body = response.read()
+              return json.loads(body) if body else None
+          
+          releases = api('GET', f'repos/{repository}/releases?per_page=100')
+          assert len(releases) < 100, 'Review pagination before processing additional releases.'
+          for release in releases:
+              assets = {asset['name']: asset for asset in release['assets']}
+              retired = [asset for name, asset in assets.items() if name.endswith('.deb')]
+              checksum_asset = assets.get('SHA256SUMS')
+              original_checksums = None
+              filtered_checksums = None
+              if checksum_asset:
+                  original_checksums = urllib.request.urlopen(checksum_asset['browser_download_url']).read()
+                  if checksum_asset.get('digest'):
+                      assert 'sha256:' + hashlib.sha256(original_checksums).hexdigest() == checksum_asset['digest']
+                  lines = original_checksums.decode().splitlines()
+                  kept = [line for line in lines if not line.split()[-1].endswith('.deb')]
+                  filtered_checksums = ('\n'.join(kept) + '\n').encode()
+                  for line in kept:
+                      digest, filename = line.split(maxsplit=1)
+                      filename = filename.removeprefix('./')
+                      assert filename in assets, filename
+                      assert assets[filename].get('digest') == 'sha256:' + digest, filename
+              body = release.get('body') or ''
+              new_body = '\n'.join(line for line in body.splitlines()
+                  if '.deb' not in line and not line.startswith('- amd64 Debian/Ubuntu package'))
+              print(release['tag_name'], 'remove:', [asset['name'] for asset in retired], 'checksums:', filtered_checksums.decode().strip() if filtered_checksums else None)
+              if dry_run:
+                  continue
+              for asset in retired:
+                  api('DELETE', f"repos/{repository}/releases/assets/{asset['id']}")
+              if filtered_checksums is not None and filtered_checksums != original_checksums:
+                  with tempfile.TemporaryDirectory() as directory:
+                      path = Path(directory) / 'SHA256SUMS'
+                      path.write_bytes(filtered_checksums)
+                      subprocess.run(['gh', 'release', 'upload', release['tag_name'], str(path), '--clobber', '--repo', repository], check=True)
+              if new_body != body:
+                  api('PATCH', f"repos/{repository}/releases/{release['id']}", {'body': new_body})
+          PYTHON

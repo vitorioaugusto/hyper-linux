@@ -8,7 +8,6 @@
 
 **AppImage:** download, run `chmod +x Hyper_Linux-0.2.2-x86_64.AppImage`, then open it. If FUSE is unavailable, pass `--appimage-extract-and-run`.
 
-**Debian/Ubuntu:** `sudo apt install ./hyper-linux_0.2.2_amd64.deb`. Reconnect the dongle after installation.
 
 A running PipeWire desktop session with PulseAudio compatibility and the host `pipewire` / `pactl` tools is required. Built on Ubuntu 22.04 (glibc 2.35). Packages are x86_64 only. AppImage users may need to install the supplied udev rule; see the README.
 

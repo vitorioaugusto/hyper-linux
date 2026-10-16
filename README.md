@@ -25,7 +25,7 @@ Hyper Linux is an independent community project, not affiliated with HyperX or H
 
 ## Download and install
 
-Download the **AppImage** or **.deb** from [GitHub Releases](https://github.com/vitorioaugusto/hyper-linux/releases/latest). Packages currently target **x86_64 / amd64**, built on Ubuntu 22.04 (glibc 2.35). Other architectures are not packaged yet.
+Download the **AppImage** from [GitHub Releases](https://github.com/vitorioaugusto/hyper-linux/releases/latest). The AppImage targets **x86_64**, built on Ubuntu 22.04 (glibc 2.35). Other architectures are not packaged yet.
 
 ### AppImage
 
@@ -44,14 +44,13 @@ If your distribution cannot mount AppImages through FUSE, use:
 
 The AppImage does not install USB permission rules or modify system audio services. See **USB permissions** below if needed.
 
-### Debian / Ubuntu
+On Debian / Ubuntu, install the host audio tools if needed:
 
 ```bash
-sudo apt install ./hyper-linux_0.2.2_amd64.deb
-hyper-linux
+sudo apt install pipewire pipewire-bin pipewire-pulse pulseaudio-utils
 ```
 
-The package installs an application menu entry, runtime dependencies and device-specific udev rules. Reconnect the dongle after installation. An active PipeWire desktop session with PulseAudio compatibility is required; the package does not replace your running audio server.
+A PipeWire desktop session with PulseAudio compatibility must be active. For an application menu entry, use Gear Lever or your desktop's AppImage integration.
 
 There is currently no RPM or Flathub publication. See [packaging notes](docs/packaging.md) for build recipes, dependency licenses and validation.
 
@@ -95,7 +94,9 @@ This installs the app under `~/.local/share/hyper-linux`, adds a launcher under 
 If diagnostics report permission denied for `/dev/hidraw*`, install the supplied device-specific rules:
 
 ```bash
-sudo install -m644 udev/70-hyper-linux.rules /etc/udev/rules.d/70-hyper-linux.rules
+# Download the device-specific rule when using the AppImage.
+curl -fLO https://raw.githubusercontent.com/vitorioaugusto/hyper-linux/main/udev/70-hyper-linux.rules
+sudo install -m644 70-hyper-linux.rules /etc/udev/rules.d/70-hyper-linux.rules
 sudo udevadm control --reload-rules
 ```
 

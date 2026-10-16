@@ -24,7 +24,7 @@ Projeto independente da comunidade, sem afiliação com HyperX ou HP. Usa ilustr
 
 ## Baixar e instalar
 
-Baixe o **AppImage** ou o **.deb** em [GitHub Releases](https://github.com/vitorioaugusto/hyper-linux/releases/latest). Os pacotes são para **x86_64 / amd64**, compilados em Ubuntu 22.04 (glibc 2.35). Outras arquiteturas ainda não têm pacotes.
+Baixe o **AppImage** em [GitHub Releases](https://github.com/vitorioaugusto/hyper-linux/releases/latest). O AppImage é para **x86_64**, compilado em Ubuntu 22.04 (glibc 2.35). Outras arquiteturas ainda não têm pacotes.
 
 ### AppImage — incluindo Arch / CachyOS
 
@@ -43,14 +43,13 @@ Se a distribuição não conseguir montar AppImages com FUSE:
 
 O AppImage não instala regras USB nem altera os serviços de áudio. Veja **Permissão USB** abaixo, se necessário.
 
-### Debian / Ubuntu
+No Debian / Ubuntu, instale as ferramentas de áudio do sistema, se necessário:
 
 ```bash
-sudo apt install ./hyper-linux_0.2.2_amd64.deb
-hyper-linux
+sudo apt install pipewire pipewire-bin pipewire-pulse pulseaudio-utils
 ```
 
-O pacote instala entrada no menu, dependências e regras udev específicas do fone. Reconecte o dongle depois da instalação. É necessária uma sessão PipeWire com compatibilidade PulseAudio ativa; o pacote não substitui o servidor de áudio em execução.
+É necessária uma sessão PipeWire com compatibilidade PulseAudio ativa. Para adicionar o AppImage ao menu, use o Gear Lever ou a integração disponível no seu desktop.
 
 Ainda não há RPM nem publicação no Flathub. As [notas de empacotamento](docs/packaging.md) descrevem as receitas, licenças das dependências e validação.
 
@@ -94,7 +93,9 @@ Instala em `~/.local/share/hyper-linux`, cria o launcher em `~/.local/bin` e adi
 Caso o diagnóstico indique acesso negado a `/dev/hidraw*`:
 
 ```bash
-sudo install -m644 udev/70-hyper-linux.rules /etc/udev/rules.d/70-hyper-linux.rules
+# Baixe a regra específica do dispositivo ao usar o AppImage.
+curl -fLO https://raw.githubusercontent.com/vitorioaugusto/hyper-linux/main/udev/70-hyper-linux.rules
+sudo install -m644 70-hyper-linux.rules /etc/udev/rules.d/70-hyper-linux.rules
 sudo udevadm control --reload-rules
 ```
 

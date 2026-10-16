@@ -19,11 +19,5 @@ export APPIMAGE_EXTRACT_AND_RUN=1
 "./Hyper_Linux-${HYPER_TEST_VERSION}-x86_64.AppImage" --backend-info
 QT_QPA_PLATFORM=offscreen "./Hyper_Linux-${HYPER_TEST_VERSION}-x86_64.AppImage" --preview --smoke-test
 bash /src/packaging/test-wayland.sh
-apt-get update
-apt-get install -y --no-install-recommends "./hyper-linux_${HYPER_TEST_VERSION}_amd64.deb"
-hyper-linux --version
-hyper-linux --backend-info
-QT_QPA_PLATFORM=offscreen hyper-linux --preview --smoke-test
-test -f /usr/lib/udev/rules.d/70-hyper-linux.rules
-echo "Clean runtime and Debian dependency installation verified."
+echo "Clean AppImage runtime and Wayland verification passed."
 '
