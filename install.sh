@@ -9,7 +9,7 @@ hyper_desktop_dir="$hyper_data_root/applications"
 mkdir -p -- "$hyper_app_dir/assets" "$hyper_bin_dir" "$hyper_desktop_dir"
 install -m755 ./hyper-linux "$hyper_app_dir/.hyper-linux.new"
 mv -f -- "$hyper_app_dir/.hyper-linux.new" "$hyper_app_dir/hyper-linux"
-install -m644 backend.py protocol.py LICENSE README.md README.pt-BR.md "$hyper_app_dir/"
+install -m644 backend.py protocol.py VERSION LICENSE README.md README.pt-BR.md "$hyper_app_dir/"
 install -m644 assets/hyper-linux.svg "$hyper_app_dir/assets/hyper-linux.svg"
 python3 - "$hyper_app_dir" "$hyper_bin_dir" "$hyper_desktop_dir" <<'PY'
 from pathlib import Path

@@ -229,6 +229,32 @@ class AudioTests(unittest.TestCase):
             unrelated.wait()
 
 
+class PackagingEnvironmentTests(unittest.TestCase):
+    def test_host_audio_tools_do_not_load_appimage_libraries(self):
+        with patch.dict(os.environ, {
+            "LD_LIBRARY_PATH": "/tmp/appimage/usr/lib",
+            "HYPER_LINUX_HOST_LD_LIBRARY_PATH": "/opt/audio/lib",
+        }, clear=True):
+            env = backend.system_environment()
+            self.assertEqual(env["LD_LIBRARY_PATH"], "/opt/audio/lib")
+            self.assertEqual(os.environ["LD_LIBRARY_PATH"], "/tmp/appimage/usr/lib")
+            self.assertEqual(env["LC_ALL"], "C")
+
+    def test_empty_original_library_path_is_removed(self):
+        with patch.dict(os.environ, {
+            "LD_LIBRARY_PATH": "/tmp/appimage/usr/lib",
+            "HYPER_LINUX_HOST_LD_LIBRARY_PATH": "",
+        }, clear=True):
+            self.assertNotIn("LD_LIBRARY_PATH", backend.system_environment())
+
+    def test_frozen_backend_restores_pyinstaller_original_path(self):
+        with patch.object(sys, "frozen", True, create=True), patch.dict(os.environ, {
+            "LD_LIBRARY_PATH": "/tmp/_MEI/libs",
+            "LD_LIBRARY_PATH_ORIG": "/opt/audio/lib",
+        }, clear=True):
+            self.assertEqual(backend.system_environment()["LD_LIBRARY_PATH"], "/opt/audio/lib")
+
+
 class ServerTests(unittest.TestCase):
     def test_batched_requests_are_all_processed(self):
         script = Path(__file__).with_name("backend.py")

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Hyper Linux
+Comment=Control Cloud III Wireless headsets on Linux
+Exec=hyper-linux
+Icon=hyper-linux
+Terminal=false
+Categories=AudioVideo;Audio;
+Keywords=headset;headphones;microphone;sidetone;HyperX;
+StartupNotify=true

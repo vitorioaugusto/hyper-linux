@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.vitorioaugusto.HyperLinux</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Hyper Linux</name>
+  <summary>Control Cloud III Wireless headsets on Linux</summary>
+  <developer id="io.github.vitorioaugusto"><name>Vitório Augusto Ferreira da Costa</name></developer>
+  <description>
+    <p>An independent desktop app for Cloud III Wireless headsets, with battery status, microphone mute, sidetone, automatic power-off and PipeWire audio effects.</p>
+    <p>This project was vibe-coded with AI assistance. It is experimental and is not affiliated with HyperX or HP.</p>
+  </description>
+  <launchable type="desktop-id">hyper-linux.desktop</launchable>
+  <url type="homepage">https://github.com/vitorioaugusto/hyper-linux</url>
+  <url type="bugtracker">https://github.com/vitorioaugusto/hyper-linux/issues</url>
+  <provides><binary>hyper-linux</binary></provides>
+  <content_rating type="oars-1.1"/>
+  <screenshots><screenshot type="default">
+    <caption>Headset controls with an English interface</caption>
+    <image>https://raw.githubusercontent.com/vitorioaugusto/hyper-linux/main/docs/screenshot.png</image>
+  </screenshot></screenshots>
+  <releases><release version="0.2.0" date="2026-10-16"><description><p>English interface and AppImage and Debian packages.</p></description></release></releases>
+</component>

@@ -7,7 +7,7 @@
 
 A native Linux desktop app for the **HyperX Cloud III Wireless**, built with Qt 6, Python and PipeWire. No Wine, NGENUITY installation or HyperHeadset dependency is required.
 
-**Status:** experimental, tested with a `03f0:05b7` dongle on CachyOS / KDE Plasma. Battery, mute and microphone monitoring were confirmed during testing. The `03f0:0c9d` variant is recognized but has not been tested on hardware here. EQ audio output still needs broader testing. The interface is currently in Brazilian Portuguese.
+**Status:** experimental, tested with a `03f0:05b7` dongle on CachyOS / KDE Plasma. Battery, mute and microphone monitoring were confirmed during testing. The `03f0:0c9d` variant is recognized but has not been tested on hardware here. EQ audio output still needs broader testing. The application interface and repository screenshots are in English.
 
 Hyper Linux is an independent community project, not affiliated with HyperX or HP. It uses original illustrations and system fonts; no vendor logos, product photos, fonts, Windows installers, DLLs or firmware are distributed.
 
@@ -23,26 +23,53 @@ Hyper Linux is an independent community project, not affiliated with HyperX or H
 - 10-band software EQ with adjustable frequency and Q, presets and JSON profile import/export.
 - Local diagnostics and USB traces, without recording microphone audio.
 
-## Requirements
+## Download and install
 
-- Linux desktop with PipeWire and its PulseAudio compatibility service.
-- Qt 6 Widgets, Python 3, `pactl` and `libusb-1.0`.
-- A C++17 compiler and `pkg-config` when building from source.
-- Cloud III Wireless USB dongle and a powered-on headset.
+Download the **AppImage** or **.deb** from [GitHub Releases](https://github.com/vitorioaugusto/hyper-linux/releases/latest). Packages currently target **x86_64 / amd64**, built on Ubuntu 22.04 (glibc 2.35). Other architectures are not packaged yet.
 
-### Arch
+### AppImage
+
+Qt, Python and libusb are included. Your desktop still needs a running **PipeWire session with PulseAudio compatibility**, plus the host `pipewire` and `pactl` commands. On Arch / CachyOS, those are provided by `pipewire`, `pipewire-pulse` and `libpulse`.
+
+```bash
+chmod +x Hyper_Linux-0.2.0-x86_64.AppImage
+./Hyper_Linux-0.2.0-x86_64.AppImage
+```
+
+If your distribution cannot mount AppImages through FUSE, use:
+
+```bash
+./Hyper_Linux-0.2.0-x86_64.AppImage --appimage-extract-and-run
+```
+
+The AppImage does not install USB permission rules or modify system audio services. See **USB permissions** below if needed.
+
+### Debian / Ubuntu
+
+```bash
+sudo apt install ./hyper-linux_0.2.0_amd64.deb
+hyper-linux
+```
+
+The package installs an application menu entry, runtime dependencies and device-specific udev rules. Reconnect the dongle after installation. An active PipeWire desktop session with PulseAudio compatibility is required; the package does not replace your running audio server.
+
+There is currently no RPM or Flathub publication. See [packaging notes](docs/packaging.md) for build recipes, dependency licenses and validation.
+
+## Source dependencies
+
+For an Arch source build:
 
 ```bash
 sudo pacman -S --needed gcc pkgconf qt6-base python pipewire pipewire-audio pipewire-pulse libpulse libusb
 ```
 
-### Ubuntu / Debian
+For Ubuntu / Debian:
 
 ```bash
 sudo apt install g++ pkg-config qt6-base-dev python3 pipewire pipewire-bin pipewire-pulse pulseaudio-utils libusb-1.0-0
 ```
 
-Package availability and audio service setup depend on your distribution. Installing a package alone does not replace an already-running audio server. A PipeWire desktop session must be active.
+A powered-on Cloud III Wireless and its USB dongle are required for hardware controls. Run the app as your normal desktop user.
 
 ## Build and run
 
@@ -53,7 +80,7 @@ bash build.sh
 bash run.sh
 ```
 
-Run the app as your normal desktop user, without `sudo`. Close other headset control apps while testing. If you downloaded a compiled archive from a successful GitHub Actions build, extract it and run `bash run.sh`; the compiler is not needed for that archive.
+Run the app as your normal desktop user, without `sudo`. Close other headset control apps while testing.
 
 ### Install for your user
 
@@ -76,13 +103,13 @@ Unplug and reconnect the dongle. These rules grant access to the active local us
 
 ## Microphone monitoring
 
-On **Dispositivo**, enable **Ouvir minha voz no fone** to use hardware sidetone. If it is not audible, disable it and try **Áudio → Ativar retorno por software**. Start with the default 25% monitor volume and use only one monitoring mode at a time to avoid echo.
+On **Device**, enable **Hear my voice in the headset** to use hardware sidetone. If it is not audible, disable it and try **Audio → Enable software monitoring**. Start with the default 25% monitor volume and use only one monitoring mode at a time to avoid echo.
 
 The software monitor requests a 10 ms PipeWire latency; actual end-to-end latency depends on the audio graph and headset and has not been measured. Closing the app stops its software monitoring and EQ processes.
 
 ## Equalizer
 
-Select the physical headset output on **Áudio**, then enable the EQ on **Equalizador**. In your desktop sound settings, select **Hyper Linux · Equalizador** as the output. The app does not change your default audio device automatically. Positive boosts apply conservative headroom to reduce clipping, which may lower the overall volume.
+Select the physical headset output on **Audio**, then enable the EQ on **Equalizer**. In your desktop sound settings, select **Hyper Linux · Equalizer** as the output. The app does not change your default audio device automatically. Positive boosts apply conservative headroom to reduce clipping, which may lower the overall volume.
 
 Profiles use the `hyper-linux-eq-v1` JSON format. The EQ is processed by PipeWire and is not saved into the headset's onboard memory.
 
@@ -97,15 +124,17 @@ Profiles use the `hyper-linux-eq-v1` JSON format. The EQ is processed by PipeWir
 ## Diagnostics and tests
 
 ```bash
-python3 backend.py --diagnose
+./hyper-linux --diagnose
 python3 -m unittest -v test_backend
 QT_QPA_PLATFORM=offscreen ./hyper-linux --preview --smoke-test
 ```
 
 The diagnostic command performs read-only queries. Logs are stored in `~/.local/state/hyper-linux`, respecting `XDG_STATE_HOME`. Review logs before attaching them to issues; they can contain local device identifiers and filesystem paths. Include your distribution, desktop, dongle USB ID and the observed behavior when reporting an issue.
 
+Additional screenshots: [Audio](docs/audio.png) · [Equalizer](docs/equalizer.png).
+
 See [the protocol notes](docs/protocol.md) for packet structure and confirmation behavior.
 
 ## License
 
-The project code and original artwork are licensed under the [MIT License](LICENSE). Qt and other system dependencies retain their own licenses. Product names identify compatible hardware.
+The project code and original artwork are licensed under the [MIT License](LICENSE). Qt and other dependencies retain their own licenses. The AppImage includes third-party notices under `usr/share/licenses/hyper-linux` in its extracted contents. Product names identify compatible hardware.

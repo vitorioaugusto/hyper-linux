@@ -1,6 +1,6 @@
 """Cloud III Wireless protocol reconstructed from NGENUITY 3.1.0.
 
-See research/PROTOCOL.md for binary addresses and limitations.
+See docs/protocol.md for packet details and limitations.
 Only allowlisted, reversible settings are exposed here.
 """
 import time
@@ -13,20 +13,20 @@ SETTINGS = {"mute": (0x03, 0x86), "sidetone": (0x01, 0x84), "sleep": (0x02, 0x85
 
 def packet(command, value=0, size=64):
     if command not in QUERIES and command not in (1, 2, 3):
-        raise ValueError("Comando não autorizado pelo protocolo reconstruído")
+        raise ValueError("Command is not allowed by the reconstructed protocol")
     if size not in (62, 64) or not 0 <= value <= 255:
-        raise ValueError("Pacote inválido")
+        raise ValueError("Invalid packet")
     return bytes([0x66, command, value]) + bytes(size - 3)
 
 
 def setting(name, value):
     if name not in SETTINGS:
-        raise ValueError("Configuração desconhecida")
+        raise ValueError("Unknown setting")
     if name in ("mute", "sidetone"):
         if type(value) is not bool:
-            raise ValueError("O valor deve ser verdadeiro ou falso")
+            raise ValueError("Value must be true or false")
     elif type(value) is not int or not 0 <= value <= 255:
-        raise ValueError("Use 0 (nunca) ou 1 a 255 minutos")
+        raise ValueError("Use 0 (never) or 1–255 minutes")
     return SETTINGS[name][0], int(value), SETTINGS[name][1]
 
 

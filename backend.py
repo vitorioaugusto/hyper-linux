@@ -6,6 +6,7 @@ import ctypes.util
 import errno
 import json
 import os
+import platform
 from pathlib import Path
 import select
 import selectors
@@ -25,10 +26,25 @@ def emit(kind, **data):
     print(json.dumps({"type": kind, **data}, ensure_ascii=False), flush=True)
 
 
+def system_environment():
+    """Do not inject bundled Qt/Python libraries into host audio programs."""
+    env = dict(os.environ)
+    original = env.get("HYPER_LINUX_HOST_LD_LIBRARY_PATH")
+    if original is None and getattr(sys, "frozen", False):
+        original = env.get("LD_LIBRARY_PATH_ORIG", "")
+    if original is not None:
+        if original:
+            env["LD_LIBRARY_PATH"] = original
+        else:
+            env.pop("LD_LIBRARY_PATH", None)
+    env["LC_ALL"] = "C"
+    return env
+
+
 def run(args, timeout=4):
-    p = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    p = subprocess.run(args, capture_output=True, text=True, timeout=timeout, env=system_environment())
     if p.returncode:
-        raise RuntimeError(p.stderr.strip() or f"{args[0]} falhou ({p.returncode})")
+        raise RuntimeError(p.stderr.strip() or f"{args[0]} failed ({p.returncode})")
     return p.stdout
 
 
@@ -73,10 +89,11 @@ def discover():
 class USBControl:
     """Endpoint-zero SET_REPORT fallback. Never detaches or claims the audio driver."""
     def __init__(self, info):
-        name = ctypes.util.find_library("usb-1.0")
-        if not name:
-            raise RuntimeError("libusb-1.0 não encontrada")
-        self.lib = ctypes.CDLL(name)
+        name = ctypes.util.find_library("usb-1.0") or "libusb-1.0.so.0"
+        try:
+            self.lib = ctypes.CDLL(name)
+        except OSError as exc:
+            raise RuntimeError("libusb-1.0 was not found") from exc
         lib = self.lib
         lib.libusb_init.argtypes = [ctypes.POINTER(ctypes.c_void_p)]
         lib.libusb_exit.argtypes = [ctypes.c_void_p]
@@ -93,7 +110,7 @@ class USBControl:
         self.ctx = ctypes.c_void_p()
         self.handle = ctypes.c_void_p()
         if lib.libusb_init(ctypes.byref(self.ctx)) < 0:
-            raise RuntimeError("libusb: acesso ao USB indisponível nesta sessão")
+            raise RuntimeError("libusb: USB access is unavailable in this session")
         devs = ctypes.POINTER(ctypes.c_void_p)()
         count = lib.libusb_get_device_list(self.ctx, ctypes.byref(devs))
         try:
@@ -102,21 +119,21 @@ class USBControl:
                 if lib.libusb_get_bus_number(dev) == info["bus"] and lib.libusb_get_device_address(dev) == info["address"]:
                     rc = lib.libusb_open(dev, ctypes.byref(self.handle))
                     if rc < 0:
-                        raise RuntimeError(f"libusb_open: erro {rc}")
+                        raise RuntimeError(f"libusb_open: error {rc}")
                     break
         finally:
             if count >= 0:
                 lib.libusb_free_device_list(devs, 1)
         if not self.handle:
             self.close()
-            raise RuntimeError("Dongle não acessível via libusb")
+            raise RuntimeError("Dongle is not accessible through libusb")
 
     def write(self, data):
         buf = ctypes.create_string_buffer(data)
         # HID SET_REPORT, Output Report ID 0x66, interface 3.
         rc = self.lib.libusb_control_transfer(self.handle, 0x21, 9, 0x0266, 3, buf, len(data), 250)
         if rc != len(data):
-            raise RuntimeError(f"SET_REPORT retornou {rc}; esperado {len(data)}")
+            raise RuntimeError(f"SET_REPORT returned {rc}; expected {len(data)}")
 
     def close(self):
         if self.handle:
@@ -158,7 +175,7 @@ class Headset:
             except BlockingIOError:
                 break
             if not data:
-                raise OSError(errno.ENODEV, "Dongle desconectado")
+                raise OSError(errno.ENODEV, "Dongle disconnected")
             self.trace.add("rx", hex=data.hex())
             if self.state.update(data):
                 self.last_rx = time.monotonic()
@@ -174,7 +191,7 @@ class Headset:
         else:
             n = os.write(self.fd, data)
             if n != len(data):
-                raise RuntimeError(f"Escrita incompleta: {n}/{len(data)}")
+                raise RuntimeError(f"Incomplete write: {n}/{len(data)}")
 
     def query(self, code, timeout=0.3):
         self.send(code)
@@ -190,7 +207,7 @@ class Headset:
         self.close()
         candidates = discover()
         if not candidates:
-            raise RuntimeError("Cloud III Wireless não encontrado. Conecte o dongle USB.")
+            raise RuntimeError("Cloud III Wireless was not found. Connect the USB dongle.")
         errors = []
         for info in candidates:
             self.info = info
@@ -218,8 +235,8 @@ class Headset:
                         errors.append(f"{mode}/{size}: {exc}")
             self.close()
         self.close()
-        raise RuntimeError("Não foi possível confirmar comunicação com o dongle. " + "; ".join(errors[-6:]) +
-                           ". Feche HyperHeadset/NGENUITY e consulte Diagnóstico.")
+        raise RuntimeError("Could not confirm communication with the dongle. " + "; ".join(errors[-6:]) +
+                           ". Close HyperHeadset/NGENUITY and check Diagnostics.")
 
     def snapshot(self):
         return {**self.state.snapshot(), "device": self.info, "transport": self.mode,
@@ -242,7 +259,7 @@ class Headset:
         if not self.mode:
             self.connect()
         if self.state.values["connected"] is not True:
-            raise RuntimeError("Ligue o fone antes de alterar suas configurações USB.")
+            raise RuntimeError("Turn on the headset before changing its USB settings.")
         self.receive()
         self.send(command, arg)
         # Read-back is separate from a write succeeding. Never fake success in the UI.
@@ -278,7 +295,7 @@ def audio_devices():
             volumes = [float(v.get("value_percent", "0%").rstrip("%")) for v in row.get("volume", {}).values()]
             description = row.get("description")
             if not description or description == "(null)":
-                description = "HyperX Cloud III Wireless · " + ("saída estéreo" if kind == "sinks" else "microfone")
+                description = "HyperX Cloud III Wireless · " + ("stereo output" if kind == "sinks" else "microphone")
             result.append({"name": name, "description": description,
                            "mute": row.get("mute"), "volume": round(sum(volumes) / max(1, len(volumes)))})
         return result
@@ -287,13 +304,13 @@ def audio_devices():
 
 def eq_config(target, bands):
     if len(bands) != 10:
-        raise ValueError("O equalizador requer 10 bandas")
+        raise ValueError("The equalizer requires 10 bands")
     nodes, links = [], []
     max_gain = 0.0
     for i, band in enumerate(bands):
         freq, gain, q = float(band["frequency"]), float(band["gain"]), float(band.get("q", 1.4))
         if not (20 <= freq <= 20000 and -12 <= gain <= 12 and 0.1 <= q <= 12):
-            raise ValueError("Banda fora do intervalo permitido")
+            raise ValueError("Band values are out of range")
         max_gain += max(0.0, gain)
         nodes.append({"type": "builtin", "label": "bq_peaking", "name": f"eq{i}",
                       "control": {"Freq": freq, "Q": q, "Gain": gain}})
@@ -310,7 +327,7 @@ def eq_config(target, bands):
             "context.modules": [{"name": "libpipewire-module-protocol-native"},
                 {"name": "libpipewire-module-client-node"},
                 {"name": "libpipewire-module-filter-chain", "args": {
-                    "node.description": "Hyper Linux · Equalizador", "media.name": "Hyper Linux EQ",
+                    "node.description": "Hyper Linux · Equalizer", "media.name": "Hyper Linux EQ",
                     "filter.graph": {"nodes": nodes, "links": links,
                                      "inputs": ["headroom:In"], "outputs": ["eq9:Out"]},
                     "audio.channels": 2, "audio.position": ["FL", "FR"],
@@ -321,12 +338,12 @@ def eq_config(target, bands):
 
 def loop_config(source, sink, volume):
     if not 0 <= volume <= 100:
-        raise ValueError("Volume inválido")
+        raise ValueError("Invalid volume")
     # A real gain node controls monitor volume; a generic 'volume' stream
     # property is not sufficient to guarantee attenuation on PipeWire.
     config = eq_config(sink, [{"frequency": 1000, "gain": 0, "q": 1} for _ in range(10)])
     args = config["context.modules"][-1]["args"]
-    args.update({"node.description": "Hyper Linux · Retorno do microfone", "media.name": "Hyper Linux Monitor",
+    args.update({"node.description": "Hyper Linux · Microphone monitor", "media.name": "Hyper Linux Monitor",
                  "node.latency": "480/48000", "audio.channels": 1, "audio.position": ["MONO"],
                  "filter.graph": {"nodes": [{"type": "builtin", "name": "monitor_gain", "label": "linear",
                      "control": {"Mult": volume / 100, "Add": 0.0}}],
@@ -361,9 +378,9 @@ class Audio:
     def start_loop(self, source, sink, volume):
         devices = audio_devices()
         if source not in [d["name"] for d in devices["sources"]] or sink not in [d["name"] for d in devices["sinks"]]:
-            raise ValueError("Escolha a entrada e a saída do Cloud III Wireless")
+            raise ValueError("Select the Cloud III Wireless input and output")
         if not 0 <= volume <= 100:
-            raise ValueError("Volume inválido")
+            raise ValueError("Invalid volume")
         self.stop("loop")
         DATA.mkdir(parents=True, exist_ok=True)
         fd, path = tempfile.mkstemp(prefix="hyper-linux-monitor-", suffix=".conf")
@@ -371,14 +388,14 @@ class Audio:
         with os.fdopen(fd, "w") as f:
             json.dump(loop_config(source, sink, volume), f)
         with (DATA / "loopback.log").open("w") as log:
-            self.loop = subprocess.Popen(["pipewire", "-c", path], stdin=subprocess.DEVNULL, stdout=log, stderr=log)
+            self.loop = subprocess.Popen(["pipewire", "-c", path], stdin=subprocess.DEVNULL, stdout=log, stderr=log, env=system_environment())
         time.sleep(0.12)
         if self.loop.poll() is not None:
-            raise RuntimeError((DATA / "loopback.log").read_text()[-1200:] or "PipeWire encerrou o monitoramento")
+            raise RuntimeError((DATA / "loopback.log").read_text()[-1200:] or "PipeWire stopped the monitor")
 
     def start_eq(self, target, bands):
         if target not in [d["name"] for d in audio_devices()["sinks"]]:
-            raise ValueError("Selecione a saída física HyperX")
+            raise ValueError("Select the physical headset output")
         config = eq_config(target, bands)
         self.stop("eq")
         DATA.mkdir(parents=True, exist_ok=True)
@@ -387,17 +404,17 @@ class Audio:
         with os.fdopen(fd, "w") as f:
             json.dump(config, f)
         with (DATA / "eq.log").open("w") as log:
-            self.eq = subprocess.Popen(["pipewire", "-c", path], stdin=subprocess.DEVNULL, stdout=log, stderr=log)
+            self.eq = subprocess.Popen(["pipewire", "-c", path], stdin=subprocess.DEVNULL, stdout=log, stderr=log, env=system_environment())
         # Verify the node exists. Do not alter the user's default audio device.
         for _ in range(10):
             if self.eq.poll() is not None:
-                raise RuntimeError((DATA / "eq.log").read_text()[-1200:] or "PipeWire encerrou o equalizador")
+                raise RuntimeError((DATA / "eq.log").read_text()[-1200:] or "PipeWire stopped the equalizer")
             sinks = json.loads(run(["pactl", "-f", "json", "list", "sinks"]))
             if any(r["name"] == "hyper_linux_eq" for r in sinks):
                 return
             time.sleep(0.08)
         self.stop("eq")
-        raise RuntimeError("O PipeWire não registrou a saída do equalizador; consulte eq.log")
+        raise RuntimeError("PipeWire did not register the equalizer output; check eq.log")
 
     def shutdown(self):
         self.stop("loop")
@@ -432,7 +449,7 @@ def server():
     subscription = None
     try:
         subscription = subprocess.Popen(["pactl", "subscribe"], stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env={**os.environ, "LC_ALL": "C"})
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=system_environment())
         os.set_blocking(subscription.stdout.fileno(), False)
         sel.register(subscription.stdout, selectors.EVENT_READ)
     except OSError:
@@ -475,7 +492,7 @@ def server():
                     return
                 input_buffer += chunk
                 if len(input_buffer) > 1_000_000:
-                    raise ValueError("Requisição excessivamente grande")
+                    raise ValueError("Request is too large")
                 while b"\n" in input_buffer:
                     line, input_buffer = input_buffer.split(b"\n", 1)
                     lines.append(line)
@@ -494,23 +511,23 @@ def server():
                         data["elapsed_ms"] = round((time.monotonic() - start) * 1000)
                         emit("state", **data)
                         if not data["confirmed"]:
-                            raise RuntimeError("Comando enviado, mas o fone não confirmou o valor solicitado.")
+                            raise RuntimeError("Command sent, but the headset did not confirm the requested value.")
                     elif action == "audio_devices":
                         data = audio_devices()
                     elif action == "audio_set":
                         devices = audio_devices()
                         kind = request["kind"]
                         if kind not in ("sink", "source"):
-                            raise ValueError("Tipo de dispositivo inválido")
+                            raise ValueError("Invalid device type")
                         target = request["target"]
                         if target not in [d["name"] for d in devices[kind + "s"]]:
-                            raise ValueError("Dispositivo HyperX não encontrado")
+                            raise ValueError("HyperX device not found")
                         if "mute" in request:
                             run(["pactl", f"set-{kind}-mute", target, "1" if request["mute"] else "0"])
                         elif "volume" in request:
                             vol = int(request["volume"])
                             if not 0 <= vol <= 100:
-                                raise ValueError("Volume fora do intervalo")
+                                raise ValueError("Volume is out of range")
                             run(["pactl", f"set-{kind}-volume", target, f"{vol}%"])
                         data = audio_devices()
                     elif action == "loopback":
@@ -535,7 +552,7 @@ def server():
                     elif action == "quit":
                         return
                     else:
-                        raise ValueError("Ação desconhecida")
+                        raise ValueError("Unknown action")
                     emit("result", id=request.get("id"), action=action, ok=True, data=data)
                 except Exception as exc:
                     emit("result", id=request.get("id"), action=request.get("action"), ok=False, error=str(exc))
@@ -569,11 +586,15 @@ def server():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Serviço local Hyper Linux para Cloud III Wireless")
+    parser = argparse.ArgumentParser(description="Hyper Linux local service for Cloud III Wireless")
     parser.add_argument("--server", action="store_true")
     parser.add_argument("--diagnose", action="store_true")
+    parser.add_argument("--runtime-info", action="store_true", help="Print backend runtime information without accessing hardware")
     args = parser.parse_args()
-    if args.server:
+    if args.runtime_info:
+        print(json.dumps({"python": platform.python_version(), "frozen": bool(getattr(sys, "frozen", False)),
+                          "executable": sys.executable, "protocol": "cloud-iii-wireless"}))
+    elif args.server:
         server()
     else:
         print(json.dumps(diagnose(), ensure_ascii=False, indent=2))

@@ -1,8 +1,7 @@
-name: Build and test
+name: Build, test and package
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -11,7 +10,7 @@ permissions:
 
 jobs:
   linux:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -19,28 +18,50 @@ jobs:
       - name: Install build and runtime dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++ pkg-config qt6-base-dev python3 pipewire-bin pulseaudio-utils libusb-1.0-0
-      - name: Test backend and captured protocol reports
-        run: python3 -m unittest -v test_backend
-      - name: Build desktop application
-        run: bash build.sh
-      - name: Test desktop startup without a headset
-        run: QT_QPA_PLATFORM=offscreen ./hyper-linux --preview --smoke-test
-      - name: Render interface preview
-        run: QT_QPA_PLATFORM=offscreen ./hyper-linux --screenshot preview-device.png
-      - name: Create Linux archive
+          sudo apt-get install -y --no-install-recommends g++ pkg-config dpkg-dev fakeroot patchelf qt6-base-dev qt6-base-dev-tools qt6-wayland python3 python3-pip libpython3.10 libusb-1.0-0 pulseaudio-utils pipewire-bin libfuse2 libgl1 libgl-dev libegl1 libxkbcommon0 libxcb-cursor0 desktop-file-utils
+          python3 -m pip install pyinstaller==6.22.3
+      - name: Test, build and verify AppImage and Debian packages
+        run: bash packaging/build-packages.sh
+      - name: Verify clean runtime and Debian dependency installation
+        env:
+          HYPER_CONTAINER_ENGINE: docker
+        run: bash packaging/test-clean-containers.sh
+      - name: Render English interface previews
         run: |
-          mkdir -p dist/hyper-linux/assets dist/hyper-linux/udev
-          cp hyper-linux backend.py protocol.py run.sh install.sh LICENSE README.md README.pt-BR.md dist/hyper-linux/
-          cp assets/hyper-linux.svg dist/hyper-linux/assets/
-          cp udev/70-hyper-linux.rules dist/hyper-linux/udev/
-          tar -C dist -czf dist/hyper-linux-linux-x86_64.tar.gz hyper-linux
-          cd dist
-          sha256sum hyper-linux-linux-x86_64.tar.gz > SHA256SUMS
+          QT_QPA_PLATFORM=offscreen ./hyper-linux --screenshot preview-device.png
+          QT_QPA_PLATFORM=offscreen ./hyper-linux --page 1 --screenshot preview-audio.png
+          QT_QPA_PLATFORM=offscreen ./hyper-linux --page 2 --screenshot preview-equalizer.png
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: hyper-linux-linux-x86_64
+          name: hyper-linux-x86_64-packages
           path: |
-            dist/hyper-linux-linux-x86_64.tar.gz
+            dist/*.AppImage
+            dist/*.deb
             dist/SHA256SUMS
-            preview-device.png
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: english-previews
+          path: preview-*.png
+
+  release:
+    needs: linux
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release:')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: hyper-linux-x86_64-packages
+          path: dist
+      - name: Publish versioned release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          hyper_version="$(cat VERSION)"
+          (cd dist && sha256sum --check SHA256SUMS)
+          gh release create "v$hyper_version" dist/*.AppImage dist/*.deb dist/SHA256SUMS --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Hyper Linux $hyper_version" --notes-file RELEASE_NOTES.md

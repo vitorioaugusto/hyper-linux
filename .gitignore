@@ -4,6 +4,9 @@ hyper-linux
 .hyper-linux.new
 preview-*.png
 dist/
+build/
+.packaging-tools/
+*.spec
 *.log
 *.exe
 *.dll

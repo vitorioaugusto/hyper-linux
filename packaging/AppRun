@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+hyper_app_dir="${APPDIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)}"
+export APPDIR="$hyper_app_dir"
+# Preserve the host search path before Qt/Python bundle initialization. The
+# backend restores it specifically when launching host pactl and pipewire.
+export HYPER_LINUX_HOST_LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}"
+unset QT_PLUGIN_PATH QT_QPA_PLATFORM_PLUGIN_PATH QT_QPA_PLATFORMTHEME QT_STYLE_OVERRIDE QML2_IMPORT_PATH
+export LD_LIBRARY_PATH="$hyper_app_dir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+for hyper_hook in "$hyper_app_dir"/apprun-hooks/*.sh; do
+    if [[ -f "$hyper_hook" ]]; then
+        # Upstream hooks treat optional desktop environment variables as empty.
+        set +u
+        source "$hyper_hook"
+        set -u
+    fi
+done
+exec "$hyper_app_dir/usr/bin/hyper-linux" "$@"

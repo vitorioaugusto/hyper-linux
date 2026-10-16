@@ -22,3 +22,10 @@ Sanitize captures to the minimum reports needed for a test.
 
 By contributing, you agree to license your contribution under this project's
 MIT License.
+
+Keep user-facing strings and repository screenshots in English. Regenerate screenshots
+with `QT_QPA_PLATFORM=offscreen ./hyper-linux --screenshot docs/screenshot.png`
+and `--page 1` / `--page 2` for Audio / Equalizer. The screenshots use demo data.
+
+For packaging changes, run `bash packaging/build-in-container.sh`; see
+[packaging notes](docs/packaging.md). Do not commit `build/`, `dist/` or downloaded tools.
