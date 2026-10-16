@@ -30,7 +30,7 @@ Hyper Linux is an independent community project, not affiliated with HyperX or H
 - A C++17 compiler and `pkg-config` when building from source.
 - Cloud III Wireless USB dongle and a powered-on headset.
 
-### Arch / CachyOS
+### Arch
 
 ```bash
 sudo pacman -S --needed gcc pkgconf qt6-base python pipewire pipewire-audio pipewire-pulse libpulse libusb
