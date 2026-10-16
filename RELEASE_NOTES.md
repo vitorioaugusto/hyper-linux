@@ -2,7 +2,7 @@
 
 - Fix AppImages running without a visible window on KDE/Wayland, including when launched through Gear Lever.
 - Bundle Qt Wayland shell, graphics and decoration integrations and their dependencies.
-- Require the window to become exposed during startup tests.
+- Verify window exposure and the Wayland compositor configure handshake during startup tests.
 - Add a headless Weston test and a regression check that deliberately removes shell integrations.
 - Keep the English interface, MIT license and original artwork.
 

@@ -540,7 +540,7 @@ int main(int argc, char **argv) {
         auto *probe = new QTimer(&app);
         QElapsedTimer elapsed; elapsed.start();
         QObject::connect(probe, &QTimer::timeout, &app, [&app, &window, elapsed] {
-            if (window.isVisible() && window.windowHandle() && window.windowHandle()->isExposed()) {
+            if (elapsed.elapsed() >= 1000 && window.isVisible() && window.windowHandle() && window.windowHandle()->isExposed()) {
                 QTextStream(stdout) << "Window exposed on " << QGuiApplication::platformName() << '\n';
                 app.exit(0);
             } else if (elapsed.elapsed() >= 5000) {

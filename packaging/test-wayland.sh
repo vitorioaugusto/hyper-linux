@@ -29,17 +29,30 @@ for hyper_attempt in {1..100}; do
     sleep 0.1
 done
 test -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
-APPIMAGE_EXTRACT_AND_RUN=1 "$hyper_image" --preview --smoke-test
+if ! APPIMAGE_EXTRACT_AND_RUN=1 WAYLAND_DEBUG=1 "$hyper_image" --preview --smoke-test > "$hyper_test_root/window.log" 2>&1; then
+    cat "$hyper_test_root/window.log" >&2; exit 1
+fi
+# Qt may report logical exposure before a shell surface exists. Require the
+# compositor configure handshake as well, rather than trusting that flag alone.
+for hyper_message in 'xdg_toplevel.*configure\(' 'xdg_surface.*ack_configure\('; do
+    if ! rg -q "$hyper_message" "$hyper_test_root/window.log"; then
+        cat "$hyper_test_root/window.log" >&2; exit 1
+    fi
+done
+echo 'Packaged Wayland window configured by the compositor.'
+
 # Reproduce the original invisible-window failure and ensure the probe catches it.
 (cd "$hyper_test_root" && "$hyper_image" --appimage-extract > /dev/null)
 hyper_appdir="$hyper_test_root/squashfs-root"
 test -f "$hyper_appdir/usr/plugins/wayland-shell-integration/libxdg-shell.so"
 mv "$hyper_appdir/usr/plugins/wayland-shell-integration" "$hyper_appdir/usr/plugins/disabled-shell-integration"
-if "$hyper_appdir/AppRun" --preview --smoke-test > "$hyper_test_root/missing-shell.log" 2>&1; then
-    echo 'The window probe incorrectly accepted missing Wayland shell integrations.' >&2
+# On Qt 6.2, even an unconfigured window can briefly report exposure. This
+# negative check therefore validates protocol traffic and the shell error.
+WAYLAND_DEBUG=1 "$hyper_appdir/AppRun" --preview --smoke-test > "$hyper_test_root/missing-shell.log" 2>&1 || true
+if ! rg -q 'Loading shell integration failed' "$hyper_test_root/missing-shell.log" ||
+    rg -q 'xdg_surface.*ack_configure\(' "$hyper_test_root/missing-shell.log"; then
+    cat "$hyper_test_root/missing-shell.log" >&2
+    echo 'Missing shell integrations did not reproduce the unconfigured-window failure.' >&2
     exit 1
 fi
-rg -q 'Window did not become exposed on wayland' "$hyper_test_root/missing-shell.log" || {
-    cat "$hyper_test_root/missing-shell.log" >&2; exit 1;
-}
-echo 'Wayland window exposure and missing-shell regression verified.'
+echo 'Wayland compositor handshake and missing-shell regression verified.'

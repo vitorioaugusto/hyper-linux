@@ -45,7 +45,7 @@ APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=offscreen dist/Hyper_Linux-0.2.2-x86_
 
 `--backend-info` reports `frozen: true` for the AppImage and does not access hardware. `--diagnose` performs read-only device and audio queries; run it in your desktop session to check USB access. Preview and offscreen checks do not validate audible monitoring or EQ output.
 
-The AppImage includes the Wayland shell, client graphics and decoration plugin directories in addition to the platform plugin. `packaging/test-wayland.sh` runs the packaged app under headless Weston and requires an exposed window. It also removes shell integration plugins from an extracted copy and verifies that startup fails, reproducing the original invisible-window bug. Install `weston` and `ripgrep` to run this check outside the builder.
+The AppImage includes the Wayland shell, client graphics and decoration plugin directories in addition to the platform plugin. `packaging/test-wayland.sh` runs the packaged app under headless Weston and checks the compositor configure handshake as well as window exposure. This runs in the clean runtime before installing any system Qt packages, so missing bundled plugins cannot fall back to host Qt. It also removes shell integration plugins from an extracted copy and verifies the shell error and absence of the configure handshake, reproducing the original invisible-window bug. Install `weston` and `ripgrep` to run this check outside the builder.
 
 The launcher clears external Qt plugin overrides. Before starting host audio tools, the backend restores the original library path so bundled Qt/Python libraries do not interfere with system PipeWire tools.
 
