@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+hyper-linux
+.hyper-linux.new
+preview-*.png
+dist/
+*.log
+*.exe
+*.dll
+*.resources
+.env
+.env.*

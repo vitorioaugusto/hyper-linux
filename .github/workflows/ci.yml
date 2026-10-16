@@ -1,0 +1,46 @@
+name: Build and test
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install build and runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ pkg-config qt6-base-dev python3 pipewire-bin pulseaudio-utils libusb-1.0-0
+      - name: Test backend and captured protocol reports
+        run: python3 -m unittest -v test_backend
+      - name: Build desktop application
+        run: bash build.sh
+      - name: Test desktop startup without a headset
+        run: QT_QPA_PLATFORM=offscreen ./hyper-linux --preview --smoke-test
+      - name: Render interface preview
+        run: QT_QPA_PLATFORM=offscreen ./hyper-linux --screenshot preview-device.png
+      - name: Create Linux archive
+        run: |
+          mkdir -p dist/hyper-linux/assets dist/hyper-linux/udev
+          cp hyper-linux backend.py protocol.py run.sh install.sh LICENSE README.md README.pt-BR.md dist/hyper-linux/
+          cp assets/hyper-linux.svg dist/hyper-linux/assets/
+          cp udev/70-hyper-linux.rules dist/hyper-linux/udev/
+          tar -C dist -czf dist/hyper-linux-linux-x86_64.tar.gz hyper-linux
+          cd dist
+          sha256sum hyper-linux-linux-x86_64.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: hyper-linux-linux-x86_64
+          path: |
+            dist/hyper-linux-linux-x86_64.tar.gz
+            dist/SHA256SUMS
+            preview-device.png
