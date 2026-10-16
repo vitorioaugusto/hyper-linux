@@ -9,17 +9,17 @@ else
     hyper_engine=docker
 fi
 "$hyper_engine" build -t hyper-linux-runtime:ubuntu22 -f packaging/RuntimeContainerfile packaging
-"$hyper_engine" run --rm -v "$PWD/dist:/packages:ro" hyper-linux-runtime:ubuntu22 bash -c '
+"$hyper_engine" run --rm -v "$PWD/dist:/packages:ro" -e "HYPER_TEST_VERSION=$(cat VERSION)" hyper-linux-runtime:ubuntu22 bash -c '
 set -euo pipefail
 if command -v python3 || dpkg-query -W libqt6core6 2>/dev/null; then
     echo "The clean runtime unexpectedly contains Python or Qt." >&2; exit 1
 fi
 export APPIMAGE_EXTRACT_AND_RUN=1
-./Hyper_Linux-*-x86_64.AppImage --version
-./Hyper_Linux-*-x86_64.AppImage --backend-info
-QT_QPA_PLATFORM=offscreen ./Hyper_Linux-*-x86_64.AppImage --preview --smoke-test
+"./Hyper_Linux-${HYPER_TEST_VERSION}-x86_64.AppImage" --version
+"./Hyper_Linux-${HYPER_TEST_VERSION}-x86_64.AppImage" --backend-info
+QT_QPA_PLATFORM=offscreen "./Hyper_Linux-${HYPER_TEST_VERSION}-x86_64.AppImage" --preview --smoke-test
 apt-get update
-apt-get install -y --no-install-recommends ./hyper-linux_*_amd64.deb
+apt-get install -y --no-install-recommends "./hyper-linux_${HYPER_TEST_VERSION}_amd64.deb"
 hyper-linux --version
 hyper-linux --backend-info
 QT_QPA_PLATFORM=offscreen hyper-linux --preview --smoke-test

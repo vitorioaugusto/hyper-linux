@@ -8,6 +8,7 @@ import sys
 
 destination = Path(sys.argv[1])
 destination.mkdir(parents=True, exist_ok=True)
+shutil.copytree("/usr/share/common-licenses", destination / "common-licenses", dirs_exist_ok=True)
 packages = subprocess.check_output(["dpkg-query", "-W", "-f=${binary:Package}\t${Version}\t${source:Package}\t${source:Version}\n"], text=True)
 (destination / "ubuntu-packages.tsv").write_text(packages)
 for row in packages.splitlines():
@@ -33,6 +34,7 @@ for name in ("pyinstaller", "pyinstaller-hooks-contrib", "altgraph"):
 (destination / "README.txt").write_text(
     "Hyper Linux is MIT licensed. Bundled Qt, Python and other dependencies retain their own licenses.\n"
     "This directory preserves distribution copyright files and records exact Ubuntu package versions.\n"
+    "Full license texts referenced by Debian copyright notices are included in common-licenses/.\n"
     "Ubuntu source packages: https://launchpad.net/ubuntu/+source/<source-package>/<version>\n"
     "Build recipe: https://github.com/vitorioaugusto/hyper-linux/tree/main/packaging\n"
     "The AppImage can be extracted with --appimage-extract to inspect or replace bundled libraries.\n")

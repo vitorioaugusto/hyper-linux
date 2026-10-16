@@ -6,7 +6,7 @@
 
 static QString root;
 #ifndef HYPER_LINUX_VERSION
-#define HYPER_LINUX_VERSION "0.2.0"
+#define HYPER_LINUX_VERSION "0.2.1"
 #endif
 
 static QPair<QString, QStringList> backendCommand(QString argument) {

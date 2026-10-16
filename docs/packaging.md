@@ -38,9 +38,9 @@ The AppImage tools are downloaded from upstream GitHub releases and verified aga
 ## Runtime checks
 
 ```bash
-APPIMAGE_EXTRACT_AND_RUN=1 dist/Hyper_Linux-0.2.0-x86_64.AppImage --version
-APPIMAGE_EXTRACT_AND_RUN=1 dist/Hyper_Linux-0.2.0-x86_64.AppImage --backend-info
-APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=offscreen dist/Hyper_Linux-0.2.0-x86_64.AppImage --preview --smoke-test
+APPIMAGE_EXTRACT_AND_RUN=1 dist/Hyper_Linux-0.2.1-x86_64.AppImage --version
+APPIMAGE_EXTRACT_AND_RUN=1 dist/Hyper_Linux-0.2.1-x86_64.AppImage --backend-info
+APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=offscreen dist/Hyper_Linux-0.2.1-x86_64.AppImage --preview --smoke-test
 ```
 
 `--backend-info` reports `frozen: true` for the AppImage and does not access hardware. `--diagnose` performs read-only device and audio queries; run it in your desktop session to check USB access. Preview and offscreen checks do not validate audible monitoring or EQ output.
@@ -53,7 +53,7 @@ The Debian package installs `70-hyper-linux.rules` automatically. For the AppIma
 
 ## Licenses and library replacement
 
-Extract with `--appimage-extract`. Original source is in this repository. The extracted `usr/share/licenses/hyper-linux/` directory includes distribution copyright notices, exact Ubuntu package versions and notices for the Python freezing tools. Ubuntu source packages are available through Launchpad using the recorded source package and version. Qt is dynamically linked; bundled shared libraries can be inspected or replaced in the extracted directory and the application started through `AppRun`.
+Extract with `--appimage-extract`. Original source is in this repository. The extracted `usr/share/licenses/hyper-linux/` directory includes full common license texts, distribution copyright notices, exact Ubuntu package versions and notices for the Python freezing tools. Ubuntu source packages are available through Launchpad using the recorded source package and version. Qt is dynamically linked; bundled shared libraries can be inspected or replaced in the extracted directory and the application started through `AppRun`.
 
 ## Publishing
 

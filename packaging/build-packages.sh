@@ -8,4 +8,5 @@ bash packaging/build-deb.sh
 bash packaging/build-appimage.sh
 bash packaging/test-packages.sh
 cd dist
-sha256sum ./*.AppImage ./*.deb > SHA256SUMS
+hyper_version="$(cat ../VERSION)"
+sha256sum "Hyper_Linux-${hyper_version}-x86_64.AppImage" "hyper-linux_${hyper_version}_$(dpkg --print-architecture).deb" > SHA256SUMS

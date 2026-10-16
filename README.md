@@ -32,14 +32,14 @@ Download the **AppImage** or **.deb** from [GitHub Releases](https://github.com/
 Qt, Python and libusb are included. Your desktop still needs a running **PipeWire session with PulseAudio compatibility**, plus the host `pipewire` and `pactl` commands. On Arch / CachyOS, those are provided by `pipewire`, `pipewire-pulse` and `libpulse`.
 
 ```bash
-chmod +x Hyper_Linux-0.2.0-x86_64.AppImage
-./Hyper_Linux-0.2.0-x86_64.AppImage
+chmod +x Hyper_Linux-0.2.1-x86_64.AppImage
+./Hyper_Linux-0.2.1-x86_64.AppImage
 ```
 
 If your distribution cannot mount AppImages through FUSE, use:
 
 ```bash
-./Hyper_Linux-0.2.0-x86_64.AppImage --appimage-extract-and-run
+./Hyper_Linux-0.2.1-x86_64.AppImage --appimage-extract-and-run
 ```
 
 The AppImage does not install USB permission rules or modify system audio services. See **USB permissions** below if needed.
@@ -47,7 +47,7 @@ The AppImage does not install USB permission rules or modify system audio servic
 ### Debian / Ubuntu
 
 ```bash
-sudo apt install ./hyper-linux_0.2.0_amd64.deb
+sudo apt install ./hyper-linux_0.2.1_amd64.deb
 hyper-linux
 ```
 
